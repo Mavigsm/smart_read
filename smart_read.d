@@ -1,5 +1,5 @@
 import std.stdio;
-import std.file;
+//import std.file;
 
 alias fstream     = File;
 //alias string_t    = string;
@@ -8,11 +8,18 @@ alias string_view = string;
 
 char[] _tmp;
 
+T return_t(T)()
+{
+   static if (is(T == bool))
+      return false;
+   else
+      return ;
+}
+
+/// A File reader that reads each line and runs a callback with the line read as the arguement to the callback
 struct smart_read
 {
    enum read_mode { normal, smart };
-
-   //this() { } /// defined for class
 
    /// ctor taking filename and seek position (to beigin the reading from)
    this(string fname, long _pos)
@@ -29,11 +36,6 @@ struct smart_read
    }
 
    ref string_t line() { return m_line; }
-
-   /*bool open()
-   {
-      return open();
-   }*/
 
    bool open(ref string fname)
    {
@@ -59,10 +61,8 @@ struct smart_read
          ret= callback(line);
          if (ret) return ret;
       }
-      //debug { return callback(_tmp); }
-      static assert(1);
-      //version (release) { return callback(""); }
-      //assert(0);
+
+      return return_t!(T)();
    }
 
    T read_once(T)(fstream ifs, string fname, long _pos, T delegate(string) callback)
@@ -94,9 +94,10 @@ struct smart_read
             pos += line.length;
             callback(line);
          }
+         return ;
       }
 
-      static if (is(typeof(callback) == bool delegate(string_t)))
+      else static if (is(typeof(callback) == bool delegate(string_t)))
       {
          bool ret = false;
          ifs.seek(pos);
@@ -109,10 +110,10 @@ struct smart_read
          }
          return ret;
       }
-      return ;
+      //return return_t!(T)(); /// No need since return is in both bool and void path, this will never be reached
+                               /// Under bool and void circumstance
    }
 
-   //template <smart_read::read_mode rmode, typename T>
    T read_all(read_mode rd, T)(T delegate(string_t) callback)
    {
       static if (rd == read_mode.smart)
@@ -124,6 +125,7 @@ struct smart_read
          pos = 0;
          return read_all();
       }
+      //return return_t!(T)();
    }
 
    void read_lines(long lines)
@@ -136,8 +138,6 @@ struct smart_read
 
    T read_lines(T)(long lines, T delegate(string_t) callback)
    {
-      char[] tmp;
-
       static if (is(typeof(callback) == void delegate(string_t)))
       {
          for (long i = 0; ifs.readln(line) && (i < lines); ++i)
@@ -145,6 +145,7 @@ struct smart_read
             pos += line.length + 1;
             callback(line);
          }
+         return ;
       }
 
       else static if (is(typeof(callback) == bool delegate(string_t)))
@@ -158,7 +159,6 @@ struct smart_read
          }
          return b;
       }
-      debug { return callback(tmp); }
    }
 
    /// Read, starting from one (begin/start) line to another (end)
